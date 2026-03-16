@@ -348,11 +348,42 @@ function renderDetail(y,id,c){
 
 function renderFP(){
   const ph_ids=[...new Set([...Object.keys(PHOTOS),...Object.keys(FOTO_MAP)])];
-  if(!ph_ids.length){document.getElementById('b-fotos').innerHTML=`<div class="empty"><div style="font-size:2.6rem;margin-bottom:9px">📷</div><p style="color:var(--gray)">Las fotos aparecerán aquí una vez subidas</p></div>`;return;}
-  const by={};ph_ids.forEach(mid=>{const y=mid.split('_')[0];if(!by[y])by[y]=[];const k=y;const m=(DATA[k]||{matches:[]}).matches.find(x=>x.id===mid);const fm=FOTO_MAP[mid];
-    const ph2=PHOTOS[mid]||(fm&&fm.files?fm.files.map(f=>({src:fm.folder+'/'+f,credit:fm.credit||''})):[]);
-    by[y].push({mid,m,ph:ph2});});
-  let h='';Object.keys(by).sort().reverse().forEach(y=>{h+=`<div class="py-group"><div class="py-title">${y}</div>`;by[y].forEach(({mid,m,ph})=>{const comp=m?[m.competition,m.phase].filter(x=>x&&x!='nan').join(' · '):'';const opp=m?.opponent||mid;const sc=m?.score||'';const pw=m?.pen_win??null;h+=`<div class="pm-group"><div class="pm-hdr"><span>vs ${opp}</span>${sc?`<span style="${ss(m.result,pw)};font-family:'Bebas Neue',sans-serif;font-size:1rem">${sc}</span>`:''}<span class="pm-sub">${comp}${m?.date?' · '+m.date:''}</span></div>`;if(ph.length){h+=`<div class="photo-gallery">${ph.map((p,i)=>`<div class="photo-item" onclick="openLB(${JSON.stringify(ph).replace(/'/g,"&#39;")},${i})"><img src="${p.src}" alt="" loading="lazy"><div class="photo-credit">${p.credit||''}</div></div>`).join('')}</div>`;}h+=`</div>`;});h+=`</div>`;});
+  if(!ph_ids.length){
+    document.getElementById('b-fotos').innerHTML=`<div class="empty"><div style="font-size:2.6rem;margin-bottom:9px">📷</div><p style="color:var(--gray)">Las fotos aparecerán aquí una vez subidas</p></div>`;
+    return;
+  }
+  // Group by year
+  const by={};
+  ph_ids.forEach(mid=>{
+    const y=mid.startsWith('s')?mid.slice(1).split('_')[0]:mid.split('_')[0];
+    if(!by[y])by[y]=[];
+    const isSr=mid.startsWith('s');
+    const k=isSr?y+'_senior':y;
+    const m=(DATA[k]||{matches:[]}).matches.find(x=>x.id===mid);
+    const photoCount=PHOTOS[mid]?PHOTOS[mid].length:(FOTO_MAP[mid]?FOTO_MAP[mid].files.length:0);
+    by[y].push({mid,m,isSr,photoCount});
+  });
+  let h='';
+  Object.keys(by).sort().reverse().forEach(y=>{
+    h+=`<div class="py-group"><div class="py-title">${y}</div><div class="match-list">`;
+    by[y].forEach(({mid,m,isSr,photoCount})=>{
+      if(!m) return;
+      const comp=[m.competition,m.phase].filter(x=>x&&x!='nan').join(' · ');
+      const meta=[comp,m.date].filter(Boolean).join(' · ');
+      const pw=m.pen_win??null;
+      const cat=isSr?'senior':'libres';
+      h+=`<div class="match-row" onclick="openDetail('${m.year||y}','${mid}','${cat}')">
+        <div>
+          <div class="match-opp">${m.opponent}${isSr?' <span style="font-size:.68rem;color:var(--cyan)">[Sr]</span>':''}</div>
+          <div class="match-meta">${meta?`<span>${meta}</span>`:''}<span style="font-size:.7rem;opacity:.7">📷 ${photoCount} fotos</span></div>
+        </div>
+        <div class="match-score" style="${ss(m.result,pw)}">${m.score}</div>
+        <span class="badge ${badgeClass(m.result,pw)}">${badgeText(m.result,pw)}</span>
+        <div class="match-scorers"></div>
+      </div>`;
+    });
+    h+=`</div></div>`;
+  });
   document.getElementById('b-fotos').innerHTML=h;
 }
 
