@@ -113,7 +113,7 @@ nav button.active{color:var(--gl);background:rgba(30,120,60,.15)}
 .status-sub_no_enter{background:var(--c-sn-bg);border-color:rgba(45,110,74,.2)}.status-sub_no_enter .dot{background:var(--c-sn)}.status-sub_no_enter .pname{color:#666}
 .status-sub_expelled{background:var(--c-se2-bg);border-color:rgba(155,89,182,.22)}.status-sub_expelled .dot{background:var(--c-se2)}.status-sub_expelled .pname{color:var(--c-se2)}
 .status-unknown_green{background:var(--c-t-bg);border-color:rgba(29,185,84,.25)}.status-unknown_green .dot{background:var(--gl)}.status-unknown_green .pname{color:var(--gl)}
-.photo-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin-top:9px}
+.photo-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-top:9px}
 .photo-item{border-radius:9px;overflow:hidden;cursor:pointer;background:#111;border:1px solid var(--border);aspect-ratio:3/2;position:relative}
 .photo-item img{width:100%;height:100%;object-fit:cover;transition:transform .3s}.photo-item:hover img{transform:scale(1.03)}
 .photo-credit{position:absolute;bottom:0;left:0;right:0;padding:5px 9px;background:linear-gradient(0deg,rgba(0,0,0,.7),transparent);font-size:.66rem;color:#ccc;font-style:italic}
@@ -322,7 +322,7 @@ function renderDetail(y,id,c){
   if(!ph.length && FOTO_MAP[id]&&FOTO_MAP[id].files){
     const fm=FOTO_MAP[id];
     ph=fm.files.map(f=>({
-      src: fm.folder.split('/').map(s=>encodeURIComponent(s)).join('/')+'/'+encodeURIComponent(f),
+      src: fm.folder+'/'+f,
       credit: fm.credit||''
     }));
   }
@@ -342,7 +342,10 @@ function renderDetail(y,id,c){
   const entries=sortSq(Object.entries(sq));
   if(!entries.length){h+=`<div class="no-data"><div style="font-size:1.7rem;margin-bottom:6px">📋</div><p>Sin datos de plantel para este partido</p></div>`;}
   else{const ps=SO.filter(s=>entries.some(([,v])=>v===s));h+=`<div class="sq-legend">`;ps.forEach(s=>{h+=`<div class="sq-li"><span class="sq-dot" style="background:${SI[s].c}"></span>${SI[s].l}</div>`;});h+=`</div><div class="squad-grid">`;entries.forEach(([name,status])=>{const ie=(status==='titular_expelled'||status==='sub_expelled');const info=SI[status]||SI['unknown_green'];h+=`<div class="player-card status-${status}" onclick="openPlayerDetail('${encodeURIComponent(name)}')"><span class="dot"></span><div class="pinfo"><div class="pname">${name}</div><div class="prole">${info.l}</div></div>${ie?'<div class="rcm"></div>':''}</div>`;});h+=`</div>`;}
-  if(ph.length){h+=`<div style="margin-top:20px"><div class="sec-title">FOTOS DEL PARTIDO</div><div class="photo-gallery">${ph.map((p,i)=>`<div class="photo-item" onclick="openLB(${JSON.stringify(ph).replace(/'/g,"&#39;")},${i})"><img src="${p.src}" alt="" loading="lazy"><div class="photo-credit">${p.credit||''}</div></div>`).join('')}</div></div>`;}
+  if(ph.length){
+    window._ps=window._ps||{};window._ps[id]=ph;
+    h+=`<div style="margin-top:20px"><div class="sec-title">FOTOS DEL PARTIDO</div><div class="photo-gallery">${ph.map((p,i)=>`<div class="photo-item" onclick="openLBs('${id}',${i})"><img src="${p.src}" alt="" loading="lazy"><div class="photo-credit">${p.credit||''}</div></div>`).join('')}</div></div>`;
+  }
   document.getElementById('b-detail').innerHTML=h;
 }
 
@@ -388,6 +391,7 @@ function renderFP(){
 }
 
 function openLB(ph,i){lbP=ph;lbI=i;updLB();document.getElementById('lightbox').classList.add('open');}
+function openLBk(key,i){const ph=(window._photoSets||{})[key]||[];if(ph.length)openLB(ph,i);}
 function updLB(){const p=lbP[lbI];document.getElementById('lbimg').src=p.src;document.getElementById('lbcred').textContent=p.credit||'';document.getElementById('lbcnt').textContent=`${lbI+1} / ${lbP.length}`;}
 function lbNav(d,e){if(e)e.stopPropagation();lbI=(lbI+d+lbP.length)%lbP.length;updLB();}
 function closeLB(e){if(e&&(e.target.tagName==='IMG'||e.target.closest('.lb-nav')))return;document.getElementById('lightbox').classList.remove('open');}
@@ -485,6 +489,7 @@ function renderPlayerDetail(name){
   document.getElementById('b-player-detail').innerHTML=h;
 }
 
+function openLBs(id,i){const ph=(window._ps||{})[id]||[];if(ph.length){openLB(ph,i);}}
 function init(){buildYT('yt-r',renderResumen);buildYT('yt-p',renderPartidos);buildYT('yt-j',renderJugadores);buildCT('ct-r');buildCT('ct-p');buildCT('ct-j');renderResumen(curYear);renderPartidos(curYear);renderJugadores(curYear);}
 init();
 </script>
