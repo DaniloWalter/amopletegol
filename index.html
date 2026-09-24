@@ -191,6 +191,10 @@ body.light-mode .match-hero{background:linear-gradient(135deg,#062036,#0B3154);b
 .pd-wdl{display:flex;height:8px;border-radius:4px;overflow:hidden;margin:8px 0 4px;gap:2px}
 footer{text-align:center;padding:30px 20px;color:#333;font-size:.71rem;border-top:1px solid #1a1a1a;margin-top:43px}
 @media(max-width:600px){.hi{gap:4px;padding:6px 0}.logo{font-size:1.5rem}nav button{font-size:.75rem;padding:4px 8px}.hero-top{grid-template-columns:1fr;gap:10px}.hero-score{font-size:2.8rem;display:block;text-align:center}.match-row{grid-template-columns:1fr auto 28px}.match-scorers{display:none}.squad-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}}
+
+
+#fotos-player-filter:focus{outline:none;border-color:var(--gl)}
+
 </style>
 </head>
 <body>
@@ -208,6 +212,7 @@ footer{text-align:center;padding:30px 20px;color:#333;font-size:.71rem;border-to
     <button onclick="showPage('alltime',this)">All Time</button>
     <button onclick="showPage('records',this)">Récords</button>
     <button onclick="showPage('fotos',this)">Fotos</button>
+    <button onclick="showPage('palmares',this)">🏆 Palmarés</button>
     <button onclick="showPage('equipaciones',this)">Equipaciones</button>
   </nav>
 </div></header>
@@ -229,10 +234,11 @@ footer{text-align:center;padding:30px 20px;color:#333;font-size:.71rem;border-to
   <div id="page-historial" class="page"><div class="hist-tabs"><button class="hist-tab active" onclick="setHT('temporada',this)">Por temporada</button><button class="hist-tab" onclick="setHT('rivals',this)">Por rival</button></div><div id="b-ht"></div><div id="b-hr" style="display:none"></div><div id="b-hrd" style="display:none"></div></div>
   <div id="page-players" class="page"><div id="b-players"></div><div id="b-players-comparador" style="margin-top:24px"></div></div>
   <div id="page-player-detail" class="page"><div id="b-player-detail"></div></div>
-  <div id="page-fotos" class="page"><div id="b-fotos"></div></div>
+  <div id="page-fotos" class="page"><div style="padding:12px 16px 8px"><select id="fotos-player-filter" onchange="renderFP()" style="width:100%;box-sizing:border-box;padding:9px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--fg);font-family:'DM Sans',sans-serif;font-size:.85rem;cursor:pointer"><option value="">👤 Todos los jugadores</option></select></div><div id="b-fotos"></div></div>
   <div id="page-alltime" class="page"><div id="b-alltime"></div></div>
   <div id="page-records" class="page"><div id="b-records"></div></div>
-<div id="page-equipaciones" class="page">
+<div id="page-palmares" class="page"><div id="b-palmares"></div></div>
+  <div id="page-equipaciones" class="page">
   <div id="b-equipaciones"></div>
 </div>
 <div id="page-detail" class="page" ><div id="b-detail"></div></div>
@@ -319,7 +325,7 @@ function ss(r,pw){if(r==='W')return'color:var(--gl)';if(r==='L')return'color:#e6
 function badgeClass(r,pw){if(r==='W')return'badge-W';if(r==='L')return'badge-L';if(pw===true)return'badge-W';if(pw===false)return'badge-L';return'badge-D';}
 function badgeText(r,pw){return r==='W'?'V':r==='L'?'D':'E';}
 
-function showPage(n,btn){_navStack=[n];prevPage=n;document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));document.getElementById('page-'+n).classList.add('active');if(btn)btn.classList.add('active');prevPage=n;if(n==='historial')renderHT();if(n==='alltime'){renderAT();requestAnimationFrame(()=>_drawATCharts());}if(n==='fotos')renderFP();if(n==='players'){renderPlayersPage();setTimeout(renderComparadorInline,50);}if(n==='records')renderRecords();if(n==='equipaciones')renderEquipaciones();}
+function showPage(n,btn){_navStack=[n];prevPage=n;document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));document.getElementById('page-'+n).classList.add('active');if(btn)btn.classList.add('active');prevPage=n;if(n==='historial')renderHT();if(n==='alltime'){renderAT();requestAnimationFrame(()=>_drawATCharts());}if(n==='fotos')renderFP();if(n==='palmares')renderPalmares();if(n==='players'){renderPlayersPage();setTimeout(renderComparadorInline,50);}if(n==='records')renderRecords();if(n==='equipaciones')renderEquipaciones();}
 function goHome(){showPage('resumen',document.querySelector('nav button'));}
 function openDetail(y,id,c){const _activePage2=document.querySelector('.page.active');const _cur2=_activePage2?_activePage2.id.replace('page-',''):'resumen';if(_cur2!=='player-detail'&&_cur2!=='detail'&&_navStack[_navStack.length-1]!==_cur2)_navStack.push(_cur2);prevPage=_navStack[_navStack.length-1];document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page-detail').classList.add('active');renderDetail(y,id,c||curCat);window.scrollTo(0,0);}
 function goBack(){
@@ -694,6 +700,7 @@ function closeRival(){document.getElementById('b-hrd').style.display='none';docu
 
 function sortSq(entries){return[...entries].sort(([na,sa],[nb,sb])=>{const ia=PRIORITY.indexOf(na.toUpperCase()),ib=PRIORITY.indexOf(nb.toUpperCase());const pa=ia!==-1&&(sa==='titular'||sa==='titular_expelled'),pb=ib!==-1&&(sb==='titular'||sb==='titular_expelled');if(pa&&!pb)return -1;if(!pa&&pb)return 1;if(pa&&pb)return ia-ib;const si_a=SO.indexOf(sa),si_b=SO.indexOf(sb);if(si_a!==si_b)return si_a-si_b;return na.localeCompare(nb);});}
 
+const WITHIN_POS=['TOMI','IAGO','FERBO','MUNA','NAHUEL','NEHUEN','MASA','LUCAS','FLACO','VASCO','HUEVO','PELUCA','MANU','DANILO','LALO','LUCHO','POLLO','NOTRI','SERGIO','MUDO','NICO','FARZA','SEBA','FRANCO','FOSCHI','MANU ALONSO','TINO CACHE','GONZA NOTRI JR','MATI PEBETE','JOACO','PÁJARO','REBECCA','GRINGO','FACU','VALI','BEBU','MATTO MUT'];
 function renderDetail(y,id,c){
   const isSr=c==='senior'&&SENIOR_YEARS.includes(y);
   const key=isSr?y+'_senior':y;
@@ -724,7 +731,21 @@ function renderDetail(y,id,c){
   if(m.youtube)h+=ytHtml(m.youtube);
   let sq=m.squad||{};
   if(!Object.keys(sq).length){const synth={};(m.scorers||[]).filter(s=>!s.own_goal).forEach(s=>{const u=s.name.toUpperCase();if(u&&u!=='E/C')synth[u]='unknown_green';});sq=synth;}
-  const entries=sortSq(Object.entries(sq));
+  const posOvr=m.posOverride||{};
+  const titularStatuses=['titular','titular_expelled'];
+  const subStatuses=['sub_enter','sub_expelled','sub_no_enter','unknown_green'];
+  const allEntries=Object.entries(sq);
+  const titEntries=allEntries.filter(([,s])=>titularStatuses.includes(s)).sort(([na],[nb])=>{
+    const cna=canonicalName(na)||na;
+    const cnb=canonicalName(nb)||nb;
+    const wa=WITHIN_POS.indexOf(cna),wb=WITHIN_POS.indexOf(cnb);
+    if(wa!==-1&&wb!==-1)return wa-wb;
+    if(wa!==-1)return -1;
+    if(wb!==-1)return 1;
+    return na.localeCompare(nb);
+  });
+  const subEntries=allEntries.filter(([,s])=>subStatuses.includes(s)).sort(([na],[nb])=>na.localeCompare(nb));
+  const entries=[...titEntries,...subEntries];
   if(!entries.length){h+=`<div class="no-data"><div style="font-size:1.7rem;margin-bottom:6px">📋</div><p>Sin datos de plantel para este partido</p></div>`;}
   else{const ps=SO.filter(s=>entries.some(([,v])=>v===s));h+=`<div class="sq-legend">`;ps.forEach(s=>{h+=`<div class="sq-li"><span class="sq-dot" style="background:${SI[s].c}"></span>${SI[s].l}</div>`;});h+=`</div><div class="squad-grid">`;entries.forEach(([name,status])=>{const ie=(status==='titular_expelled'||status==='sub_expelled');const info=SI[status]||SI['unknown_green'];h+=`<div class="player-card status-${status}" onclick="openPlayerDetail('${encodeURIComponent(name)}')"><span class="dot"></span><div class="pinfo"><div class="pname">${name}${(function(){const cn=canonicalName(name)||name;if(GK_PURE_NAMES.has(cn))return' 🧤';if(cn==='LUCAS'){const hasPGK=Object.keys(m.squad||{}).some(function(k){return k!=='LUCAS'&&GK_PURE_NAMES.has(k)&&['titular','sub_enter','titular_expelled','sub_expelled'].includes((m.squad||{})[k]);});return hasPGK?'':' 🧤';}return '';})()}</div><div class="prole">${info.l}</div></div>${ie?'<div class="rcm"></div>':''}</div>`;});h+=`</div>`;}
   if(ph.length){
@@ -735,7 +756,49 @@ function renderDetail(y,id,c){
 }
 
 function renderFP(){
-  const ph_ids=[...new Set([...Object.keys(PHOTOS),...Object.keys(FOTO_MAP)])];
+  const _sel=document.getElementById('fotos-player-filter');
+  const _pf=(_sel?.value||'').toUpperCase();
+  const valid_sq=['titular','sub_enter','titular_expelled','sub_expelled'];
+  const ph_ids_all=[...new Set([...Object.keys(PHOTOS),...Object.keys(FOTO_MAP)])];
+  // Build player list from all matches with photos
+  if(_sel&&_sel.options.length<=1){
+    const allPlayers=new Set();
+    const recentPlayers=new Set(); // played in latest year
+    const latestYear=ALL_YEARS[ALL_YEARS.length-1];
+    ph_ids_all.forEach(mid=>{
+      const isSr=mid.startsWith('s');
+      const y=isSr?mid.slice(1).split('_')[0]:mid.split('_')[0];
+      const k=isSr?y+'_senior':y;
+      const m=(DATA[k]||{matches:[]}).matches.find(x=>x.id===mid);
+      if(!m)return;
+      Object.entries(m.squad||{}).forEach(([n,s])=>{
+        if(!valid_sq.includes(s))return;
+        const cn=canonicalName(n)||n;
+        allPlayers.add(cn);
+        if(y===latestYear)recentPlayers.add(cn);
+      });
+    });
+    const recent=[...recentPlayers].sort((a,b)=>a.localeCompare(b));
+    const rest=[...allPlayers].filter(p=>!recentPlayers.has(p)).sort((a,b)=>a.localeCompare(b));
+    if(recent.length){
+      const og=document.createElement('optgroup');og.label='── '+latestYear+' ──';
+      recent.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=toTitle(p);og.appendChild(o);});
+      _sel.appendChild(og);
+    }
+    if(rest.length){
+      const og2=document.createElement('optgroup');og2.label='── Todos ──';
+      rest.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=toTitle(p);og2.appendChild(o);});
+      _sel.appendChild(og2);
+    }
+  }
+  const ph_ids=_pf?ph_ids_all.filter(mid=>{
+    const isSr=mid.startsWith('s');
+    const y=isSr?mid.slice(1).split('_')[0]:mid.split('_')[0];
+    const k=isSr?y+'_senior':y;
+    const m=(DATA[k]||{matches:[]}).matches.find(x=>x.id===mid);
+    if(!m)return false;
+    return Object.entries(m.squad||{}).some(([n,s])=>valid_sq.includes(s)&&(canonicalName(n)||n).toUpperCase().includes(_pf));
+  }):ph_ids_all;
   if(!ph_ids.length){
     document.getElementById('b-fotos').innerHTML=`<div class="empty"><div style="font-size:2.6rem;margin-bottom:9px">📷</div><p style="color:var(--gray)">Las fotos aparecerán aquí una vez subidas</p></div>`;
     return;
@@ -1391,6 +1454,58 @@ window.addEventListener('DOMContentLoaded',function(){
 });
 function toggleTheme(e){e.stopPropagation();const isLight=document.body.classList.toggle('light-mode');document.getElementById('theme-toggle').textContent=isLight?'☀️':'🌙';localStorage.setItem('theme',isLight?'light':'dark');}
 (function(){if(localStorage.getItem('theme')==='light'){document.body.classList.add('light-mode');const b=document.getElementById('theme-toggle');if(b)b.textContent='☀️';}})();
+
+
+function renderPalmares(){
+  const PALMA=[
+    {year:'1996',torneo:'Torneo',cat:'Libres',note:'Primer campeonato del club'},
+    {year:'1997',torneo:'Torneo',cat:'Libres',note:''},
+    {year:'2021',torneo:'Relámpago',cat:'Libres',note:''},
+    {year:'2022',torneo:'Apertura',cat:'Libres',note:''},
+    {year:'2023',torneo:'Apertura',cat:'Senior',note:''},
+    {year:'2026',torneo:'Apertura',cat:'Libres',note:''},
+  ];
+  let h=`<div style="padding:8px 0 16px;text-align:center">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:2px;color:var(--gold)">🏆 PALMARÉS</div>
+    <div style="color:var(--gray);font-size:.8rem;margin-top:4px">${PALMA.length} campeonatos</div>
+  </div>`;
+  PALMA.slice().reverse().forEach(p=>{
+    // Get match stats for this tournament from DATA
+    const key=p.cat==='Senior'?p.year+'_senior':p.year;
+    const ms=(DATA[key]||{matches:[]}).matches.filter(m=>m.competition===p.torneo);
+    const w=ms.filter(m=>m.result==='W').length;
+    const d=ms.filter(m=>m.result==='D').length;
+    const l=ms.filter(m=>m.result==='L').length;
+    const gf=ms.reduce((a,m)=>a+(m.our||0),0);
+    const gc=ms.reduce((a,m)=>a+(m.their||0),0);
+    const pct=ms.length?Math.round(w/ms.length*100):0;
+    // Top scorers
+    const sm={};
+    ms.forEach(m=>(m.scorers||[]).filter(s=>!s.own_goal).forEach(s=>{const k=canonicalName(s.name)||s.name;sm[k]=(sm[k]||0)+(s.count||1);}));
+    const topScorers=Object.entries(sm).sort((a,b)=>b[1]-a[1]).slice(0,3);
+    const statsHtml=ms.length?`
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:12px">
+        <div class="pd-stat"><div class="n" style="color:var(--gl)">${w}</div><div class="l">V</div></div>
+        <div class="pd-stat"><div class="n" style="color:var(--gold)">${d}</div><div class="l">E</div></div>
+        <div class="pd-stat"><div class="n" style="color:#e55">${l}</div><div class="l">D</div></div>
+        <div class="pd-stat"><div class="n" style="color:var(--gl)">${pct}%</div><div class="l">%V</div></div>
+        <div class="pd-stat"><div class="n">${gf}-${gc}</div><div class="l">Goles</div></div>
+        ${topScorers.length?`<div class="pd-stat"><div class="n" style="color:var(--gold);font-size:.85rem">${topScorers.map(([n,c])=>toTitle(n)+' '+c).join(' · ')}</div><div class="l">Goleadores</div></div>`:''}
+      </div>`:'';
+    h+=`<div class="player-card" style="margin-bottom:12px;padding:16px;border:1px solid var(--gold);border-radius:12px;cursor:default">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-size:2rem">🏆</div>
+        <div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:1px;color:var(--gold)">${p.torneo} ${p.year}</div>
+          <div style="font-size:.75rem;color:var(--gray)">${p.cat}${p.note?' · '+p.note:''}</div>
+        </div>
+      </div>
+      ${statsHtml}
+    </div>`;
+  });
+  document.getElementById('b-palmares').innerHTML=`<div style="padding:0 4px">${h}</div>`;
+}
+
 </script>
 </body>
 </html>
