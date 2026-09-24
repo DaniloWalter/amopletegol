@@ -22,7 +22,8 @@ body.light-mode .lb-name{color:#111}
 body.light-mode .lb-val{color:#333}
 body.light-mode .lb-head{color:#333;background:#e8e8e8}
 body.light-mode .leaderboard{background:#f4f4f4}
-body.light-mode .match-opp{color:#111}
+body.light-mode .match-opp{color:#111 !important}
+body.light-mode .hero-name{color:#111}
 body.light-mode .match-meta{color:#555}
 body.light-mode .match-score{color:#111}
 body.light-mode .at-header{background:linear-gradient(135deg,#062036,#0B3154);color:#fff}
@@ -317,10 +318,20 @@ function ss(r,pw){if(r==='W')return'color:var(--gl)';if(r==='L')return'color:#e6
 function badgeClass(r,pw){if(r==='W')return'badge-W';if(r==='L')return'badge-L';if(pw===true)return'badge-W';if(pw===false)return'badge-L';return'badge-D';}
 function badgeText(r,pw){return r==='W'?'V':r==='L'?'D':'E';}
 
-function showPage(n,btn){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));document.getElementById('page-'+n).classList.add('active');if(btn)btn.classList.add('active');prevPage=n;if(n==='historial')renderHT();if(n==='alltime'){renderAT();requestAnimationFrame(()=>_drawATCharts());}if(n==='fotos')renderFP();if(n==='players'){renderPlayersPage();setTimeout(renderComparadorInline,50);}if(n==='records')renderRecords();if(n==='equipaciones')renderEquipaciones();}
+function showPage(n,btn){_navStack=[n];prevPage=n;document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));document.getElementById('page-'+n).classList.add('active');if(btn)btn.classList.add('active');prevPage=n;if(n==='historial')renderHT();if(n==='alltime'){renderAT();requestAnimationFrame(()=>_drawATCharts());}if(n==='fotos')renderFP();if(n==='players'){renderPlayersPage();setTimeout(renderComparadorInline,50);}if(n==='records')renderRecords();if(n==='equipaciones')renderEquipaciones();}
 function goHome(){showPage('resumen',document.querySelector('nav button'));}
-function openDetail(y,id,c){prevPage=document.querySelector('.page.active').id.replace('page-','');document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page-detail').classList.add('active');renderDetail(y,id,c||curCat);window.scrollTo(0,0);}
-function goBack(){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page-'+prevPage).classList.add('active');window.scrollTo(0,0);}
+function openDetail(y,id,c){const _activePage2=document.querySelector('.page.active');const _cur2=_activePage2?_activePage2.id.replace('page-',''):'resumen';if(_cur2!=='player-detail'&&_cur2!=='detail'&&_navStack[_navStack.length-1]!==_cur2)_navStack.push(_cur2);prevPage=_navStack[_navStack.length-1];document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page-detail').classList.add('active');renderDetail(y,id,c||curCat);window.scrollTo(0,0);}
+function goBack(){
+  if(_navStack.length>1)_navStack.pop();
+  prevPage=_navStack[_navStack.length-1];
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const dest=document.getElementById('page-'+prevPage);
+  if(dest)dest.classList.add('active');
+  if(prevPage==='resumen')renderResumen(curYear);
+  else if(prevPage==='players')renderPlayersPage();
+  else if(prevPage==='partidos')renderPartidos(curYear);
+  window.scrollTo(0,0);
+}
 
 function buildCT(id){const c=document.getElementById(id);if(!hasSr(curYear)){c.innerHTML='';return;}c.innerHTML=['libres','senior'].map(ct=>`<button class="cat-tab ${ct===curCat?'active':''}" onclick="setCat('${ct}')">${ct==='libres'?'Libres':'Senior'}</button>`).join('');}
 function setCat(c){curCat=c;['ct-r','ct-p','ct-j'].forEach(id=>{const el=document.getElementById(id);if(el)el.querySelectorAll('.cat-tab').forEach(b=>b.classList.toggle('active',b.textContent.toLowerCase().startsWith(c==='libres'?'l':'s')));});renderResumen(curYear);renderPartidos(curYear);renderJugadores(curYear);}
@@ -366,28 +377,23 @@ function renderResumen(y){
     <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:18px;cursor:pointer" onclick="openDetail('${y}','${fm.id}','${curCat}')">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <div>
-          <div style="font-weight:700;font-size:1.1rem;color:var(--white)">${fm.opponent}</div>
+          <div style="font-weight:700;font-size:1.1rem;color:var(--white);mix-blend-mode:initial" class="match-opp">${fm.opponent}</div>
           <div style="font-size:.75rem;color:var(--gray);margin-top:2px">${fComp}${fm.date?' · '+fm.date:''}</div>
         </div>
         <div style="text-align:right">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;line-height:1;color:${fm.result==='W'?'var(--gl)':fm.result==='L'?'#e55':'var(--gray)'};white-space:nowrap">${fm.score}</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;line-height:1;color:${fm.result==='W'?'var(--gl)':fm.result==='L'?'#e55':'var(--gray)'}">${fm.score}</div>
           <span class="badge ${badgeClass(fm.result,fpw)}">${badgeText(fm.result,fpw)}</span>
         </div>
       </div>
       ${fm.scorers&&fm.scorers.filter(s=>!s.own_goal).length?`<div style="margin-bottom:10px">${sPills(fm.scorers)}</div>`:''}
-      ${y===ALL_YEARS[ALL_YEARS.length-1]?renderPitch(fm.squad,curCat,y,fm.formation,fm.scorers):''}
+      ${y===ALL_YEARS[ALL_YEARS.length-1]?renderPitch(fm.squad,curCat,y,fm.formation):''}
       ${fTit.length?`<div style="margin-bottom:8px">
         <div style="font-size:.65rem;color:var(--gray);letter-spacing:1px;margin-bottom:5px">TITULARES</div>
-        <div style="display:flex;flex-wrap:wrap;gap:4px">${fTit.map(([n,s])=>`<span style="background:rgba(36,139,73,.15);border:1px solid rgba(36,139,73,.3);border-radius:6px;padding:3px 8px;font-size:.72rem;color:var(--white);cursor:pointer" onclick="event.stopPropagation();openPlayerDetail('${encodeURIComponent(canonicalName(n)||n)}')">${toTitle(n)}${s==='titular_expelled'?' 🟥':''}</span>`).join('')}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px">${fTit.map(([n,s])=>{const _cn=canonicalName(n)||n;const _hasPureGKInMatch=Object.keys(fm.squad||{}).some(function(k){return k!=='LUCAS'&&GK_PURE_NAMES.has(k)&&['titular','sub_enter','titular_expelled','sub_expelled'].includes((fm.squad||{})[k]);});const _gk=GK_PURE_NAMES.has(_cn)||(_cn==='LUCAS'&&!_hasPureGKInMatch);return`<span style="background:rgba(36,139,73,.15);border:1px solid rgba(36,139,73,.3);border-radius:6px;padding:3px 8px;font-size:.72rem;color:var(--white);cursor:pointer" onclick="event.stopPropagation();openPlayerDetail('${encodeURIComponent(_cn)}')">${toTitle(n)}${_gk?' 🧤':''}${s==='titular_expelled'?' 🟥':''}</span>`;}).join('')}</div>
       </div>`:''}
       ${fSub.length?`<div>
         <div style="font-size:.65rem;color:var(--gray);letter-spacing:1px;margin-bottom:5px">INGRESARON</div>
-        <div style="display:flex;flex-wrap:wrap;gap:4px">${fSub.map(([n,s])=>{
-      const _cn=canonicalName(n)||n;
-      const _gs=(fm.scorers||[]).some(function(sc){return !sc.own_goal&&(canonicalName(sc.name)||sc.name)===_cn;});
-      const _label=toTitle(n)+(s==='sub_expelled'?' 🟥':'')+(_gs?' ⚽':'');
-      return '<span style="background:rgba(36,139,73,.08);border:1px solid rgba(36,139,73,.2);border-radius:6px;padding:3px 8px;font-size:.72rem;color:var(--gray);cursor:pointer" onclick="event.stopPropagation();openPlayerDetail(\'' + encodeURIComponent(_cn) + '\')">'+_label+'</span>';
-    }).join('')}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px">${fSub.map(([n,s])=>`<span style="background:rgba(36,139,73,.08);border:1px solid rgba(36,139,73,.2);border-radius:6px;padding:3px 8px;font-size:.72rem;color:var(--gray);cursor:pointer" onclick="event.stopPropagation();openPlayerDetail('${encodeURIComponent(canonicalName(n)||n)}')">${toTitle(n)}${s==='sub_expelled'?' 🟥':''}</span>`).join('')}</div>
       </div>`:''}
       ${fNote?`<div style="margin-top:8px;font-size:.75rem;color:var(--gray);border-top:1px solid var(--border);padding-top:8px">${fNote}</div>`:''}
       ${fHp?`<div style="margin-top:8px;font-size:.72rem;color:var(--cyan)">📷 Hay fotos de este partido</div>`:''}
@@ -719,7 +725,7 @@ function renderDetail(y,id,c){
   if(!Object.keys(sq).length){const synth={};(m.scorers||[]).filter(s=>!s.own_goal).forEach(s=>{const u=s.name.toUpperCase();if(u&&u!=='E/C')synth[u]='unknown_green';});sq=synth;}
   const entries=sortSq(Object.entries(sq));
   if(!entries.length){h+=`<div class="no-data"><div style="font-size:1.7rem;margin-bottom:6px">📋</div><p>Sin datos de plantel para este partido</p></div>`;}
-  else{const ps=SO.filter(s=>entries.some(([,v])=>v===s));h+=`<div class="sq-legend">`;ps.forEach(s=>{h+=`<div class="sq-li"><span class="sq-dot" style="background:${SI[s].c}"></span>${SI[s].l}</div>`;});h+=`</div><div class="squad-grid">`;entries.forEach(([name,status])=>{const ie=(status==='titular_expelled'||status==='sub_expelled');const info=SI[status]||SI['unknown_green'];h+=`<div class="player-card status-${status}" onclick="openPlayerDetail('${encodeURIComponent(name)}')"><span class="dot"></span><div class="pinfo"><div class="pname">${name}</div><div class="prole">${info.l}</div></div>${ie?'<div class="rcm"></div>':''}</div>`;});h+=`</div>`;}
+  else{const ps=SO.filter(s=>entries.some(([,v])=>v===s));h+=`<div class="sq-legend">`;ps.forEach(s=>{h+=`<div class="sq-li"><span class="sq-dot" style="background:${SI[s].c}"></span>${SI[s].l}</div>`;});h+=`</div><div class="squad-grid">`;entries.forEach(([name,status])=>{const ie=(status==='titular_expelled'||status==='sub_expelled');const info=SI[status]||SI['unknown_green'];h+=`<div class="player-card status-${status}" onclick="openPlayerDetail('${encodeURIComponent(name)}')"><span class="dot"></span><div class="pinfo"><div class="pname">${name}${(function(){const cn=canonicalName(name)||name;if(GK_PURE_NAMES.has(cn))return' 🧤';if(cn==='LUCAS'){const hasPGK=Object.keys(m.squad||{}).some(function(k){return k!=='LUCAS'&&GK_PURE_NAMES.has(k)&&['titular','sub_enter','titular_expelled','sub_expelled'].includes((m.squad||{})[k]);});return hasPGK?'':' 🧤';}return '';})()}</div><div class="prole">${info.l}</div></div>${ie?'<div class="rcm"></div>':''}</div>`;});h+=`</div>`;}
   if(ph.length){
     window._ps=window._ps||{};window._ps[id]=ph;
     h+=`<div style="margin-top:20px"><div class="sec-title">FOTOS DEL PARTIDO</div><div class="photo-gallery">${ph.map((p,i)=>`<div class="photo-item" onclick="openLBs('${id}',${i})"><img src="${p.src}" alt="" loading="lazy"><div class="photo-credit">${p.credit||''}</div></div>`).join('')}</div></div>`;
@@ -824,6 +830,7 @@ const POSITIONS_LIB={
   'JOACO':'DEL','FACU':'DEL','BEBU':'DEL','PÁJARO':'DEL',
   'REBECCA':'DEL','GRINGO':'DEL','GUSMAO':'DEL',
 };
+const GK_PURE_NAMES=new Set(['TOMI','MUNA','IAGO','FERBO','NAHUEL','NEHUEN','MASA']);
 const POS_ORDER={'GK':0,'DC':1,'LAT':2,'MC':3,'MCC':4,'DEL':5};
 function posSort(name,cat){const n=canonicalName(name)||name;const map=cat==='senior'?POSITIONS_SR:POSITIONS_LIB;return POS_ORDER[map[n]??POSITIONS_SR[n]??'MCC']??4;}
 
@@ -854,7 +861,7 @@ function buildPlayerStats(scope){
           Object.entries(squad).forEach(([pname,status])=>{
             if(!['titular','titular_expelled','sub_enter','sub_expelled','unknown_green'].includes(status))return;
             const p=ensure(pname);const y=ensureYear(p,year,cat);
-            y.pj++;p.totalPJ++;p.activeCats.add(cat);if(cat==='libres'){p.pjLibres=(p.pjLibres||0)+1;}else{p.pjSenior=(p.pjSenior||0)+1;}
+            y.pj++;p.totalPJ++;p.activeCats.add(cat);if(cat==='libres'){p.pjLibres=(p.pjLibres||0)+1;}else{p.pjSenior=(p.pjSenior||0)+1;}if(GK_PURE_NAMES.has(pname)){const _vi1=m.their===0?1:0;y.vi=(y.vi||0)+_vi1;y.gc=(y.gc||0)+(m.their||0);p.totalVI=(p.totalVI||0)+_vi1;p.totalGC=(p.totalGC||0)+(m.their||0);}if(pname==='LUCAS'&&(year==='2025'||year==='2026')){const _hasPureGK=Object.keys(m.squad||{}).some(function(k){return k!=='LUCAS'&&GK_PURE_NAMES.has(k)&&['titular','sub_enter','titular_expelled','sub_expelled'].includes((m.squad||{})[k]);});if(!_hasPureGK){const _vi2=m.their===0?1:0;y.vi=(y.vi||0)+_vi2;y.gc=(y.gc||0)+(m.their||0);p.totalVI=(p.totalVI||0)+_vi2;p.totalGC=(p.totalGC||0)+(m.their||0);}}
             if(status==='titular_expelled'||status==='sub_expelled'){y.reds++;p.totalReds++;}
             if(m.result==='W'){y.w++;p.totalW++;}else if(m.result==='L'){y.l++;p.totalL++;}else{y.d++;p.totalD++;}
           });
@@ -902,11 +909,11 @@ function renderPlayersPage(){
 return;
   }
   let h=`<div style="display:flex;gap:6px;margin-bottom:12px">${scopeTabBtn('fco','TORNEO FCO')}${scopeTabBtn('prefco','PRE FCO')}</div><input class="players-search" placeholder="🔍 Buscar jugador..." oninput="playerSearch=this.value;renderPlayersPage()" value="${playerSearch}"><div class="players-sort"><span style="font-size:.76rem;color:var(--gray);align-self:center">Ordenar:</span>${[['pj','Partidos'],['goals','Goles']].map(([k,l])=>`<button class="sort-btn ${playerSort===k?'active':''}" onclick="playerSort='${k}';renderPlayersPage()">${l}</button>`).join('')}</div><div class="players-grid">`;
-  list.forEach(p=>{const hasSr=p.activeCats.includes('senior');const hasBoth=p.activeCats.includes('libres')&&hasSr;const gpj=p.totalPJ>0?(p.totalGoals/p.totalPJ).toFixed(2):'0.00';const sn=SHIRT[p.name];const av=sn!==undefined?sn:p.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();h+=`<div class="player-card-list" onclick="openPlayerDetail('${encodeURIComponent(p.name)}')">${hasSr?`<span class="pcl-tag">${hasBoth?'L+Sr':'Sr'}</span>`:''}<div class="pcl-name">${p.name}</div><div class="pcl-stats">${playerSort==='goals'?`<div class="pcl-stat"><div class="n" style="color:var(--gold)">${p.totalGoals}</div><div class="l">Goles</div></div><div class="pcl-stat"><div class="n" style="color:var(--gl)">${p.totalPJ}</div><div class="l">PJ${p.pjLibres>0&&p.pjSenior>0?` (${p.pjLibres}L·${p.pjSenior}Sr)`:p.pjLibres>0?' (Lib)':' (Sr)'}</div></div>`:`<div class="pcl-stat"><div class="n" style="color:var(--gl)">${p.totalPJ}</div><div class="l">PJ${p.pjLibres>0&&p.pjSenior>0?` (${p.pjLibres}L·${p.pjSenior}Sr)`:p.pjLibres>0?' (Lib)':' (Sr)'}</div></div><div class="pcl-stat"><div class="n" style="color:var(--gold)">${p.totalGoals}</div><div class="l">Goles</div></div>`}${p.totalReds>0?`<div class="pcl-stat"><div class="n" style="color:#e55">${p.totalReds}</div><div class="l">🟥</div></div>`:''}</div></div>`;});
+  list.forEach(p=>{const hasSr=p.activeCats.includes('senior');const hasBoth=p.activeCats.includes('libres')&&hasSr;const gpj=p.totalPJ>0?(p.totalGoals/p.totalPJ).toFixed(2):'0.00';const sn=SHIRT[p.name];const av=sn!==undefined?sn:p.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();h+=`<div class="player-card-list" onclick="openPlayerDetail('${encodeURIComponent(p.name)}')">${hasSr?`<span class="pcl-tag">${hasBoth?'L+Sr':'Sr'}</span>`:''}<div class="pcl-name">${p.name}</div><div class="pcl-stats">${playerSort==='goals'?`<div class="pcl-stat"><div class="n" style="color:var(--gold)">${p.totalGoals}</div><div class="l">Goles</div></div><div class="pcl-stat"><div class="n" style="color:var(--gl)">${p.totalPJ}</div><div class="l">PJ${p.pjLibres>0&&p.pjSenior>0?` (${p.pjLibres}L·${p.pjSenior}Sr)`:p.pjLibres>0?' (Lib)':' (Sr)'}</div></div>`:`<div class="pcl-stat"><div class="n" style="color:var(--gl)">${p.totalPJ}</div><div class="l">PJ${p.pjLibres>0&&p.pjSenior>0?` (${p.pjLibres}L·${p.pjSenior}Sr)`:p.pjLibres>0?' (Lib)':' (Sr)'}</div></div><div class="pcl-stat"><div class="n" style="color:var(--gold)">${GK_PURE_NAMES.has(p.name)?(p.totalVI||0):p.totalGoals}</div><div class="l">${GK_PURE_NAMES.has(p.name)?"VI":"Goles"}</div></div>`}${p.totalReds>0?`<div class="pcl-stat"><div class="n" style="color:#e55">${p.totalReds}</div><div class="l">🟥</div></div>`:''}</div></div>`;});
   h+=`</div>`;document.getElementById('b-players').innerHTML=h;
 }
 
-function openPlayerDetail(enc){const name=decodeURIComponent(enc);prevPage=document.querySelector('.page.active').id.replace('page-','');document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page-player-detail').classList.add('active');renderPlayerDetail(name);window.scrollTo(0,0);}
+function openPlayerDetail(enc){const name=decodeURIComponent(enc);const _activePage=document.querySelector('.page.active');const _cur=_activePage?_activePage.id.replace('page-',''):'resumen';if(_cur!=='player-detail'&&_cur!=='detail'&&_navStack[_navStack.length-1]!==_cur)_navStack.push(_cur);prevPage=_navStack[_navStack.length-1];document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page-player-detail').classList.add('active');renderPlayerDetail(name);window.scrollTo(0,0);}
 
 
 function getHitos(p){
@@ -926,9 +933,99 @@ function getHitos(p){
   return alerts;
 }
 
+
+function buildDesglose(p, activeYears, tt, isGK, isGKYear){
+  const hasMixedYears=isGKYear&&activeYears.some(function(y){return !isGKYear(y);})&&activeYears.some(function(y){return isGKYear(y);});
+  let h='<div class="sec-title">DESGLOSE POR AÑO</div><div class="leaderboard"><table class="pd-year-table"><thead><tr><th>Año</th><th>Cat</th><th>PJ</th><th>Presencia</th>';
+  if(hasMixedYears) h+='<th>VI</th><th>GC</th><th>GC/PJ</th><th>Goles</th><th>G/PJ</th>';
+  else if(isGK) h+='<th>VI</th><th>GC</th><th>GC/PJ</th>';
+  else h+='<th>Goles</th><th>Pen</th><th>G/PJ</th>';
+  h+='<th>V</th><th>E</th><th>D</th><th>%V</th><th>🟥</th></tr></thead><tbody>';
+  activeYears.forEach(function(year){
+    const yd=p.years[year]||{};
+    const cats=['libres','senior'].filter(function(c){return yd[c]&&(yd[c].pj>0||yd[c].goals>0);});
+    if(!cats.length)return;
+    const showComb=cats.length>1;
+    cats.forEach(function(cat,ci){
+      const s=yd[cat];
+      const tot=(tt[year]||{})[cat]||0;
+      const pct=tot>0?Math.round(s.pj/tot*100):'-';
+      const pd=tot>0?(s.pj+'/'+tot+' ('+pct+'%)'):''+s.pj;
+      const gpp=s.pj>0?(s.goals/s.pj).toFixed(2):'0.00';
+      const gcpj=s.pj>0?(((s.gc||0)/s.pj).toFixed(2)):'-';
+      const wp=s.pj>0?Math.round(s.w/s.pj*100):0;
+      const catColor=cat==='senior'?'var(--cyan)':'#aaa';
+      const catLabel=cat==='senior'?'Sr':'Lib';
+      const presCell=(tot>0&&year!=='2017')?'<td style="font-size:.75rem;color:var(--cyan)">'+pd+'</td>':'<td style="color:#555">—</td>';
+      h+='<tr>';
+      h+='<td>'+(ci===0?year:'')+'</td>';
+      h+='<td style="font-size:.7rem;color:'+catColor+'">'+catLabel+'</td>';
+      h+='<td class="apps">'+s.pj+'</td>';
+      h+=presCell;
+      const _yearIsGK=isGKYear?isGKYear(year):isGK;
+      if(hasMixedYears){
+        if(_yearIsGK){
+          h+='<td style="color:var(--gl)">'+(s.vi||0)+'</td><td style="color:#e55">'+(s.gc||0)+'</td><td style="color:var(--cyan)">'+gcpj+'</td><td class="goals">'+(s.goals>0?s.goals:'-')+'</td><td>'+(s.goals>0?gpp:'-')+'</td>';
+        } else {
+          h+='<td>-</td><td>-</td><td>-</td><td class="goals">'+s.goals+'</td><td style="color:var(--cyan)">'+gpp+'</td>';
+        }
+      } else if(_yearIsGK){
+        h+='<td style="color:var(--gl)">'+(s.vi||0)+'</td>';
+        h+='<td style="color:#e55">'+(s.gc||0)+'</td>';
+        h+='<td style="color:var(--cyan)">'+gcpj+'</td>';
+      } else {
+        h+='<td class="goals">'+s.goals+'</td>';
+        h+='<td style="color:#aaa;font-family:\'Bebas Neue\',sans-serif">'+(s.pens||0)+'</td>';
+        h+='<td style="color:var(--cyan);font-family:\'Bebas Neue\',sans-serif;font-size:.9rem">'+gpp+'</td>';
+      }
+      h+='<td style="color:var(--gl);font-family:\'Bebas Neue\',sans-serif">'+s.w+'</td>';
+      h+='<td style="color:var(--gold);font-family:\'Bebas Neue\',sans-serif">'+s.d+'</td>';
+      h+='<td style="color:#e66;font-family:\'Bebas Neue\',sans-serif">'+s.l+'</td>';
+      h+='<td style="color:var(--gold);font-size:.8rem">'+wp+'%</td>';
+      h+='<td class="reds">'+(s.reds||0)+'</td>';
+      h+='</tr>';
+    });
+    if(showComb){
+      const lib=yd.libres||{pj:0,goals:0,pens:0,reds:0,w:0,d:0,l:0,vi:0,gc:0};
+      const sr2=yd.senior||{pj:0,goals:0,pens:0,reds:0,w:0,d:0,l:0,vi:0,gc:0};
+      const cPJ=lib.pj+sr2.pj;
+      const cG=lib.goals+sr2.goals;
+      const cVI=(lib.vi||0)+(sr2.vi||0);
+      const cGC=(lib.gc||0)+(sr2.gc||0);
+      const cGpp=cPJ>0?(cG/cPJ).toFixed(2):'0.00';
+      const cGCpj=cPJ>0?(cGC/cPJ).toFixed(2):'-';
+      const cWp=cPJ>0?Math.round((lib.w+sr2.w)/cPJ*100):0;
+      h+='<tr style="background:rgba(255,255,255,.025);border-top:1px solid #333">';
+      h+='<td colspan="2" style="color:#aaa;font-size:.72rem"><em>Total</em></td>';
+      h+='<td class="apps">'+cPJ+'</td>';
+      h+='<td style="font-size:.75rem;color:#666">—</td>';
+      if(hasMixedYears){
+        h+='<td style="color:var(--gl)">'+cVI+'</td><td style="color:#e55">'+cGC+'</td><td style="color:var(--cyan)">'+cGCpj+'</td><td class="goals">'+cG+'</td><td style="color:var(--cyan)">'+cGpp+'</td>';
+      } else if(isGK){
+        h+='<td style="color:var(--gl)">'+cVI+'</td>';
+        h+='<td style="color:#e55">'+cGC+'</td>';
+        h+='<td style="color:var(--cyan)">'+cGCpj+'</td>';
+      } else {
+        h+='<td class="goals">'+cG+'</td>';
+        h+='<td style="color:#aaa;font-family:\'Bebas Neue\',sans-serif">'+(lib.pens||0)+(sr2.pens||0)+'</td>';
+        h+='<td style="color:var(--cyan);font-family:\'Bebas Neue\',sans-serif;font-size:.9rem">'+cGpp+'</td>';
+      }
+      h+='<td style="color:var(--gl);font-family:\'Bebas Neue\',sans-serif">'+(lib.w+sr2.w)+'</td>';
+      h+='<td style="color:var(--gold);font-family:\'Bebas Neue\',sans-serif">'+(lib.d+sr2.d)+'</td>';
+      h+='<td style="color:#e66;font-family:\'Bebas Neue\',sans-serif">'+(lib.l+sr2.l)+'</td>';
+      h+='<td style="color:var(--gold);font-size:.8rem">'+cWp+'%</td>';
+      h+='<td class="reds">'+(lib.reds||0)+(sr2.reds||0)+'</td>';
+      h+='</tr>';
+    }
+  });
+  h+='</tbody></table></div>';
+  return h;
+}
+
 function renderPlayerDetail(name){
   const players=getPlayers();const tt=getTeamTotals();const p=players[name];
   if(!p){document.getElementById('b-player-detail').innerHTML='<div class="empty">Jugador no encontrado</div>';return;}
+  const _isGK=GK_PURE_NAMES.has(name)||(name==='LUCAS'&&(p.totalVI||0)>0);
   const wPct=p.totalPJ>0?Math.round(p.totalW/p.totalPJ*100):0;
   const gpj=p.totalPJ>0?(p.totalGoals/p.totalPJ).toFixed(2):'-';
   const hasSr=p.activeCats.includes('senior');const hasLib=p.activeCats.includes('libres');const hasBoth=hasLib&&hasSr;
@@ -938,9 +1035,9 @@ function renderPlayerDetail(name){
   let libPJ=0,srPJ=0,libT=0,srT=0;
   activeYears.forEach(y=>{const yd=p.years[y]||{};if(yd.libres&&(yd.libres.pj>0||yd.libres.goals>0)){libT+=tt[y]?.libres||0;libPJ+=yd.libres?.pj||0;}if(hasSr&&(yd.senior?.pj>0||yd.senior?.goals>0)){srT+=tt[y]?.senior||0;srPJ+=yd.senior?.pj||0;}});
   const libPct=libT>0?Math.round(libPJ/libT*100):null;const srPct=srT>0?Math.round(srPJ/srT*100):null;const combPct=(libT+srT)>0?Math.round((libPJ+srPJ)/(libT+srT)*100):null;
-  let h=`<button class="back-btn" onclick="goBack()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M10 3L5 8l5 5"/></svg> Volver a estadísticas</button>
+  let h=`<button class="back-btn" onclick="goBack()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M10 3L5 8l5 5"/></svg> ${prevPage==="resumen"?"Volver al inicio":prevPage==="partidos"?"Volver a partidos":prevPage==="historial"?"Volver al historial":"Volver a estadísticas"}</button>
   <div class="pd-hero"><div class="pd-avatar" style="font-size:${avFs}">${av}</div><div class="pd-info"><div class="pd-name">${name}${hasBoth?'<span class="pd-sr-badge">L+Sr</span>':hasSr?'<span class="pd-sr-badge">Senior</span>':''}</div><div class="pd-years">${activeYears[0]}${activeYears.length>1?' – '+activeYears[activeYears.length-1]:''} · ${activeYears.length} temporada${activeYears.length>1?'s':''}</div></div></div>`;
-  h+=`<div class="pd-stats-row"><div class="pd-stat"><div class="n">${p.totalPJ}</div><div class="l">Total PJ</div></div><div class="pd-stat"><div class="n gold">${p.totalGoals}</div><div class="l">Goles</div></div>${p.totalPens>0?`<div class="pd-stat"><div class="n gold">${p.totalPens}</div><div class="l">Penales</div></div>`:''}<div class="pd-stat"><div class="n cyan">${gpj}</div><div class="l">Goles/PJ</div></div><div class="pd-stat"><div class="n">${p.totalW}</div><div class="l">Victorias</div></div><div class="pd-stat"><div class="n gold">${p.totalD}</div><div class="l">Empates</div></div><div class="pd-stat"><div class="n red">${p.totalL}</div><div class="l">Derrotas</div></div><div class="pd-stat"><div class="n gold">${wPct}%</div><div class="l">% victorias</div></div>${p.totalReds>0?`<div class="pd-stat"><div class="n red">${p.totalReds}</div><div class="l">🟥 Rojas</div></div>`:''} ${combPct!==null&&hasBoth?`<div class="pd-stat"><div class="n cyan">${combPct}%</div><div class="l">Presencia total</div></div>`:''}${libPct!==null&&!hasSr?`<div class="pd-stat"><div class="n cyan">${libPct}%</div><div class="l">Presencia</div></div>`:''}</div>`;
+  h+=`<div class="pd-stats-row"><div class="pd-stat"><div class="n">${p.totalPJ}</div><div class="l">Total PJ</div></div><div class="pd-stat"><div class="n gold">${_isGK?(p.totalVI||0):p.totalGoals}</div><div class="l">${_isGK?"VI":"Goles"}</div></div>${p.totalPens>0?`<div class="pd-stat"><div class="n gold">${p.totalPens}</div><div class="l">Penales</div></div>`:''}<div class="pd-stat"><div class="n cyan">${_isGK?(p.totalGC||0):gpj}</div><div class="l">${_isGK?"GC":"G/PJ"}</div></div><div class="pd-stat"><div class="n">${p.totalW}</div><div class="l">Victorias</div></div><div class="pd-stat"><div class="n gold">${p.totalD}</div><div class="l">Empates</div></div><div class="pd-stat"><div class="n red">${p.totalL}</div><div class="l">Derrotas</div></div><div class="pd-stat"><div class="n gold">${wPct}%</div><div class="l">% victorias</div></div>${p.totalReds>0?`<div class="pd-stat"><div class="n red">${p.totalReds}</div><div class="l">🟥 Rojas</div></div>`:''} ${combPct!==null&&hasBoth?`<div class="pd-stat"><div class="n cyan">${combPct}%</div><div class="l">Presencia total</div></div>`:''}${libPct!==null&&!hasSr?`<div class="pd-stat"><div class="n cyan">${libPct}%</div><div class="l">Presencia</div></div>`:''}</div>`;
   if(hasBoth){h+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px"><div class="pd-stat" style="text-align:left;padding:14px 16px"><div style="font-size:.7rem;color:var(--gl);font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Libres</div><div style="display:flex;gap:14px;flex-wrap:wrap"><div class="pcl-stat"><div class="n" style="color:var(--gl)">${libPJ}</div><div class="l">PJ</div></div>${libPct!==null?`<div class="pcl-stat"><div class="n" style="color:var(--cyan)">${libPct}%</div><div class="l">Presencia</div></div>`:''}</div></div><div class="pd-stat" style="text-align:left;padding:14px 16px"><div style="font-size:.7rem;color:var(--cyan);font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Senior</div><div style="display:flex;gap:14px;flex-wrap:wrap"><div class="pcl-stat"><div class="n" style="color:var(--cyan)">${srPJ}</div><div class="l">PJ</div></div>${srPct!==null?`<div class="pcl-stat"><div class="n" style="color:var(--cyan)">${srPct}%</div><div class="l">Presencia</div></div>`:''}</div></div></div>`;}
   h+=`<div class="pd-wdl"><div class="mini-W" style="flex:${p.totalW||.001}"></div><div class="mini-D" style="flex:${p.totalD||.001}"></div><div class="mini-L" style="flex:${p.totalL||.001}"></div></div><div style="font-size:.68rem;color:var(--gray);margin-bottom:18px">${p.totalW}V · ${p.totalD}E · ${p.totalL}D</div>`;
     // Build SVG charts
@@ -952,9 +1049,16 @@ function renderPlayerDetail(name){
     h+=`<div class="sec-title">PARTIDOS POR AÑO</div>${svgLineChart(_ayears,_pjdata,'#248B49',null)}`;
     if(_hasGoals)h+=`<div class="sec-title">GOLES POR AÑO</div>${svgLineChart(_ayears,_golesdata,'#e8c84a',null)}`;
   }
-  h+=`<div class="sec-title">DESGLOSE POR AÑO</div><div class="leaderboard"><table class="pd-year-table"><thead><tr><th>Año</th><th>Cat</th><th>PJ</th><th>Presencia</th><th>Goles</th><th>Pen</th><th>G/PJ</th><th>V</th><th>E</th><th>D</th><th>%V</th><th>🟥</th></tr></thead><tbody>`;
-  activeYears.forEach(year=>{const yd=p.years[year]||{};const cats=['libres','senior'].filter(c=>yd[c]&&(yd[c].pj>0||yd[c].goals>0));if(!cats.length)return;const showComb=cats.length>1;cats.forEach((cat,ci)=>{const s=yd[cat];const tot=tt[year]?.[cat]||0;const pct=tot>0?Math.round(s.pj/tot*100):'-';const pd=tot>0?`${s.pj}/${tot} (${pct}%)`:String(s.pj);const gpp=s.pj>0?(s.goals/s.pj).toFixed(2):'0.00';const wp=s.pj>0?Math.round(s.w/s.pj*100):0;h+=`<tr><td>${ci===0?year:''}</td><td style="font-size:.7rem;color:${cat==='senior'?'var(--cyan)':'#aaa'}">${cat==='senior'?'Sr':'Lib'}</td><td class="apps">${s.pj}</td>${(tot>0&&year!=='2017')?`<td style="font-size:.75rem;color:var(--cyan)">${pd}</td>`:`<td style="color:#555">—</td>`}<td class="goals">${s.goals}</td><td style="color:#aaa;font-family:'Bebas Neue',sans-serif">${s.pens||0}</td><td style="color:var(--cyan);font-family:'Bebas Neue',sans-serif;font-size:.9rem">${gpp}</td><td style="color:var(--gl);font-family:'Bebas Neue',sans-serif">${s.w}</td><td style="color:var(--gold);font-family:'Bebas Neue',sans-serif">${s.d}</td><td style="color:#e66;font-family:'Bebas Neue',sans-serif">${s.l}</td><td style="color:var(--gold);font-size:.8rem">${wp}%</td><td class="reds">${s.reds||0}</td></tr>`;});if(showComb){const lib=yd.libres||{pj:0,goals:0,pens:0,reds:0,w:0,d:0,l:0};const sr2=yd.senior||{pj:0,goals:0,pens:0,reds:0,w:0,d:0,l:0};const cPJ=lib.pj+sr2.pj;const cG=lib.goals+sr2.goals;const cGpp=cPJ>0?(cG/cPJ).toFixed(2):'0.00';const cWp=cPJ>0?Math.round((lib.w+sr2.w)/cPJ*100):0;h+=`<tr style="background:rgba(255,255,255,.025);border-top:1px solid #333"><td style="color:#aaa;font-size:.72rem"></td><td style="font-size:.7rem;color:#777;font-style:italic">Total</td><td class="apps">${cPJ}</td><td style="font-size:.75rem;color:#666">—</td><td class="goals">${cG}</td><td style="color:#aaa;font-family:'Bebas Neue',sans-serif">${(lib.pens||0)+(sr2.pens||0)}</td><td style="color:var(--cyan);font-family:'Bebas Neue',sans-serif;font-size:.9rem">${cGpp}</td><td style="color:var(--gl);font-family:'Bebas Neue',sans-serif">${lib.w+sr2.w}</td><td style="color:var(--gold);font-family:'Bebas Neue',sans-serif">${lib.d+sr2.d}</td><td style="color:#e66;font-family:'Bebas Neue',sans-serif">${lib.l+sr2.l}</td><td style="color:var(--gold);font-size:.8rem">${cWp}%</td><td class="reds">${(lib.reds||0)+(sr2.reds||0)}</td></tr>`;}});
-  h+=`</tbody></table></div>`;
+  const _isGKYear=function(year){
+    if(GK_PURE_NAMES.has(name))return true;
+    if(name==='LUCAS'){
+      const yr=p.years[year]||{};
+      const anyVI=Object.values(yr).some(function(c){return (c.vi||0)>0;});
+      return anyVI;
+    }
+    return false;
+  };
+  h+=buildDesglose(p,activeYears,tt,_isGK,_isGKYear);
   const matchList=[];ALL_YEARS.forEach(year=>{['libres','senior'].forEach(cat=>{if(cat==='senior'&&!SENIOR_YEARS_SET.has(year))return;getMs(year,cat).forEach(m=>{const inSq=(m.squad||{})[name];const sg=(m.scorers||[]).filter(s=>!s.own_goal&&canonicalName(s.name)===name);if(inSq||sg.length)matchList.push({m,year,cat,status:inSq,sg});});});});
   // Hitos
   const hitos=getHitos(p);
@@ -1086,7 +1190,7 @@ function renderRecords(){
 }
 
 
-function renderPitch(squad, cat, year, formation, scorers){
+function renderPitch(squad, cat, year, formation){
   if(!squad||!Object.keys(squad).length) return '';
   const valid=['titular','titular_expelled'];
   let rows;
@@ -1113,7 +1217,6 @@ function renderPitch(squad, cat, year, formation, scorers){
   }
   const W=340,H=440,padX=20,padY=20;
   const rowH=(H-padY*2)/rows.length;
-  const _scs=new Set((scorers||[]).filter(s=>!s.own_goal).map(s=>canonicalName(s.name)||s.name));
   let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:360px;display:block;margin:0 auto">
     <!-- Pitch -->
     <rect x="0" y="0" width="${W}" height="${H}" rx="8" fill="#2d6a3f"/>
@@ -1138,12 +1241,8 @@ function renderPitch(squad, cat, year, formation, scorers){
       const shirt=SHIRT[cn]!==undefined?SHIRT[cn]:'';
       const isExp=status==='titular_expelled';
       const dispName=toTitle(name).split(' ')[0];
-      const _isScorer=_scs.has(cn);
-      const _stroke=isExp?'#e55':_isScorer?'#9b59b6':'white';
-      const _sw=isExp?'2.5':_isScorer?'2.5':'1.5';
-      const _ball=_isScorer?'<text x="'+(x+12)+'" y="'+(y-20)+'" text-anchor="middle" font-size="13">⚽</text>':'';
-      svg+=`<g onclick="openPlayerDetail('${encodeURIComponent(cn)}')" style="cursor:pointer">`+_ball+`
-        <circle cx="${x}" cy="${y}" r="18" fill="${isExp?'#c0392b':'#0B3154'}" stroke="${_stroke}" stroke-width="${_sw}"/>
+      svg+=`<g onclick="openPlayerDetail('${encodeURIComponent(cn)}')" style="cursor:pointer">
+        <circle cx="${x}" cy="${y}" r="18" fill="${isExp?'#c0392b':'#0B3154'}" stroke="white" stroke-width="1.5"/>
         ${shirt!==''?`<text x="${x}" y="${y+1}" text-anchor="middle" dominant-baseline="middle" font-size="14" font-weight="700" fill="white" font-family="'Bebas Neue',sans-serif">${shirt}</text>`:''}
         <text x="${x}" y="${y+26}" text-anchor="middle" font-size="9" fill="white" font-family="DM Sans,sans-serif" font-weight="500">${dispName}</text>
         ${isExp?`<text x="${x+14}" y="${y-12}" font-size="10">🟥</text>`:''}
@@ -1274,7 +1373,11 @@ function renderEquipaciones(){
 }
 
 function init(){buildYT('yt-r',renderResumen);buildYT('yt-p',renderPartidos);buildYT('yt-j',renderJugadores);buildCT('ct-r');buildCT('ct-p');buildCT('ct-j');renderResumen(curYear);renderPartidos(curYear);renderJugadores(curYear);}
-window.addEventListener('DOMContentLoaded',init);
+window.addEventListener('DOMContentLoaded',function(){
+  const _ap=document.querySelector('.page.active');
+  if(_ap){const _pn=_ap.id.replace('page-','');_navStack=[_pn];prevPage=_pn;}
+  init();
+});
 function toggleTheme(e){e.stopPropagation();const isLight=document.body.classList.toggle('light-mode');document.getElementById('theme-toggle').textContent=isLight?'☀️':'🌙';localStorage.setItem('theme',isLight?'light':'dark');}
 (function(){if(localStorage.getItem('theme')==='light'){document.body.classList.add('light-mode');const b=document.getElementById('theme-toggle');if(b)b.textContent='☀️';}})();
 </script>
