@@ -370,7 +370,7 @@ function renderResumen(y){
           <div style="font-size:.75rem;color:var(--gray);margin-top:2px">${fComp}${fm.date?' · '+fm.date:''}</div>
         </div>
         <div style="text-align:right">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;line-height:1;color:${fm.result==='W'?'var(--gl)':fm.result==='L'?'#e55':'var(--gray)'}">${fm.score}</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;line-height:1;color:${fm.result==='W'?'var(--gl)':fm.result==='L'?'#e55':'var(--gray)'};white-space:nowrap">${fm.score}</div>
           <span class="badge ${badgeClass(fm.result,fpw)}">${badgeText(fm.result,fpw)}</span>
         </div>
       </div>
