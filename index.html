@@ -1495,8 +1495,8 @@ function renderPalmares(){
         <div class="pd-stat"><div class="n">${gf}-${gc}</div><div class="l">Goles</div></div>
         ${topScorers.length?`<div class="pd-stat"><div class="n" style="color:var(--gold);font-size:.85rem">${topScorers.map(([n,c])=>toTitle(n)+' '+c).join(' · ')}</div><div class="l">Goleadores</div></div>`:''}
       </div>`:'';
-    h+=`<div class="player-card" style="margin-bottom:12px;padding:16px;border:1px solid var(--gold);border-radius:12px;cursor:default">
-      <div style="display:flex;align-items:center;gap:12px">
+    h+=`<div class="player-card" style="margin-bottom:12px;padding:16px;border:1px solid var(--gold);border-radius:12px;cursor:default;display:block">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">
         <div style="font-size:2rem">${p.bi?"🏆🏆":"🏆"}</div>
         <div>
           <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:1px;color:var(--gold)">${p.bi?`${p.torneo}<br>1996 · 1997`:p.torneo+' '+p.year}</div>
@@ -1504,7 +1504,7 @@ function renderPalmares(){
         </div>
       </div>
       ${statsHtml}
-      ${p.photo?`<div style="margin-top:14px;border-radius:8px;overflow:hidden;"><img src="${p.photo==='PHOTO_9697'?PALM_PHOTO_9697:p.photo==='PHOTO_2021'?PALM_PHOTO_2021:p.photo==='PHOTO_2022'?PALM_PHOTO_2022:p.photo==='PHOTO_2023'?PALM_PHOTO_2023:p.photo==='PHOTO_2026'?PALM_PHOTO_2026:''}" style="width:100%;height:${p.photoH||'280px'};object-fit:cover;object-position:center top;display:block;"></div>`:``}
+      ${p.photo?`<div style="margin-top:14px;border-radius:8px;overflow:hidden;"><img src="${p.photo==='PHOTO_9697'?PALM_PHOTO_9697:p.photo==='PHOTO_2021'?PALM_PHOTO_2021:p.photo==='PHOTO_2022'?PALM_PHOTO_2022:p.photo==='PHOTO_2023'?PALM_PHOTO_2023:p.photo==='PHOTO_2026'?PALM_PHOTO_2026:''}" style="width:100%;height:${p.photoH||"230px"};object-fit:contain;background:#000;display:block;"></div>`:``}
     </div>`;
   });
   document.getElementById('b-palmares').innerHTML=`<div style="padding:0 4px">${h}</div>`;
